@@ -1,7 +1,7 @@
 // Offline-first: the game always opens instantly from the cache.
 // Any new version is fetched quietly in the background and used on the next launch —
 // it never blocks you from playing.
-const CACHE = 'dryspace-solitaire-v1.1.0';
+const CACHE = 'dryspace-solitaire-v1.2.0';
 const ASSETS = [
   './', 'index.html', 'manifest.webmanifest',
   'logo.png', 'logo-white.png', 'wordmark-white.png', 'card-back.png',

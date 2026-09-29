@@ -32,8 +32,8 @@ body{
 }
 #app{position:fixed;inset:0;display:flex;flex-direction:column;
   background:radial-gradient(ellipse at 50% 40%,var(--felt1) 0%,var(--felt2) 100%)}
-#app::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.07;
-  background-image:repeating-linear-gradient(0deg,#000 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,#000 0 1px,transparent 1px 3px)}
+#app::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.2 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
 header{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:calc(env(safe-area-inset-top) + 6px) calc(env(safe-area-inset-right) + 12px) 6px calc(env(safe-area-inset-left) + 12px);
   background:rgba(0,0,0,.2);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -54,9 +54,11 @@ nav button:active{background:rgba(255,255,255,.12)}
 nav svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
 /* slots */
-.slot{position:absolute;left:0;top:0;width:var(--cw);height:var(--ch);border-radius:calc(var(--cw)*.08);
-  border:1.5px solid rgba(255,255,255,.28);background:rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;
-  color:rgba(255,255,255,.32);font-weight:700;font-size:calc(var(--cw)*.42)}
+.slot{position:absolute;left:0;top:0;width:var(--cw);height:var(--ch);border-radius:calc(var(--cw)*.07);
+  border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,.4)}
+.slot.fnd{border:max(2px,calc(var(--cw)*.035)) solid rgba(255,255,255,.92);background:rgba(255,255,255,.14);
+  color:rgba(0,40,0,.28);font:400 calc(var(--cw)*.7)/1 Rockwell,"Roboto Slab","American Typewriter",Georgia,serif}
 .slot svg{width:55%;height:55%;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
 
 /* cards */
@@ -67,24 +69,27 @@ nav svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:1.8;stroke-lin
 .card.up .inner{transform:rotateY(0deg)}
 .noanim .card,.noanim .inner{transition:none!important}
 .card.dragging{transition:none}
-.face,.back{position:absolute;inset:0;border-radius:calc(var(--cw)*.08);
-  backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 1px 2px rgba(0,0,0,.45)}
+.face,.back{position:absolute;inset:0;border-radius:calc(var(--cw)*.07);border:1px solid #2b2b2b;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 1px 2px rgba(0,0,0,.35)}
 .card.dragging .face{box-shadow:0 10px 18px rgba(0,0,0,.45)}
-.face{background:#fff linear-gradient(180deg,#fff 0%,#f4f4f1 100%);color:#141414;overflow:hidden}
-.face.red{color:#d3192b}
-.rk{position:absolute;left:5%;top:1%;font:700 calc(var(--cw)*.42)/1.05 -apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;letter-spacing:-.05em}
-.sm{position:absolute;right:6%;top:6%;width:calc(var(--cw)*.3);height:calc(var(--cw)*.3);fill:currentColor}
-.big{position:absolute;left:50%;bottom:7%;width:calc(var(--cw)*.64);height:calc(var(--cw)*.64);margin-left:calc(var(--cw)*-.32);fill:currentColor}
-.court{position:absolute;left:11%;right:11%;top:38%;bottom:5%;border:1.5px solid currentColor;border-radius:calc(var(--cw)*.06);
-  background:#eaf0f3;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
-.face.red .court{background:#fdebed}
-.court b{font:700 calc(var(--cw)*.4)/1 Georgia,"Times New Roman",serif}
-.court svg{width:calc(var(--cw)*.24);height:calc(var(--cw)*.24);fill:currentColor;margin-top:6%}
+.face{background:#fff;color:#141414;overflow:hidden}
+.face.red{color:#e8372c}
+.rk{position:absolute;left:5%;top:1%;font:400 calc(var(--cw)*.46)/1.05 "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-.03em}
+.rk.ten{letter-spacing:-.09em;left:2%}
+.sm{position:absolute;right:6%;top:7%;width:calc(var(--cw)*.32);height:calc(var(--cw)*.32);fill:currentColor}
+.big{position:absolute;left:50%;top:39%;width:calc(var(--cw)*.8);height:calc(var(--cw)*.8);margin-left:calc(var(--cw)*-.4);fill:currentColor}
+.art{position:absolute;left:0;bottom:0;width:100%;height:64%}
 .back{transform:rotateY(180deg);background:#fff url(card-back.png) center/100% 100% no-repeat}
-body[data-back="red"] .back{background:repeating-linear-gradient(45deg,#b01e2a 0 3px,#cc3441 3px 6px);box-shadow:inset 0 0 0 calc(var(--cw)*.05) #fff,0 1px 2px rgba(0,0,0,.45)}
-body[data-back="blue"] .back{background:repeating-linear-gradient(45deg,#1d4f95 0 3px,#2e66b3 3px 6px);box-shadow:inset 0 0 0 calc(var(--cw)*.05) #fff,0 1px 2px rgba(0,0,0,.45)}
+body[data-back="red"] .back,body[data-back="blue"] .back{--b1:#2140e0;--b2:#0b1c86;
+  background:
+    radial-gradient(circle at 50% 50%,var(--b2) 0 18%,transparent 20% 34%,var(--b2) 36% 40%,transparent 42%) 0 0/calc(var(--cw)*.24) calc(var(--cw)*.24),
+    repeating-linear-gradient(45deg,transparent 0 calc(var(--cw)*.075),var(--b2) calc(var(--cw)*.075) calc(var(--cw)*.105)),
+    repeating-linear-gradient(-45deg,transparent 0 calc(var(--cw)*.075),var(--b2) calc(var(--cw)*.075) calc(var(--cw)*.105)),
+    var(--b1);
+  box-shadow:inset 0 0 0 calc(var(--cw)*.06) #fff,inset 0 0 0 calc(var(--cw)*.08) var(--b2),0 1px 2px rgba(0,0,0,.35)}
+body[data-back="red"] .back{--b1:#d42a2a;--b2:#7d0f12}
 .card.hint .face,.slot.hint{animation:glow .6s ease-in-out 3}
-@keyframes glow{50%{box-shadow:0 0 0 3px #ffd54a,0 0 16px 5px rgba(255,213,74,.9)}}
+@keyframes glow{50%{box-shadow:0 0 12px 5px rgba(255,244,170,.95)}}
 .card.shake .inner{animation:shake .32s}
 @keyframes shake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
 
@@ -144,7 +149,7 @@ body[data-back="blue"] .back{background:repeating-linear-gradient(45deg,#1d4f95 
 
 <script>
 'use strict';
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const $ = s => document.querySelector(s);
 const board = $('#board');
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -160,6 +165,52 @@ const SUIT_PATHS = [
   [circ(50, 27, 21), circ(26, 58, 21), circ(74, 58, 21), circ(50, 52, 12),
    'M50 50C52 78 58 90 72 96L28 96C42 90 48 78 50 50Z']
 ];
+/* Court-card portraits (J/Q/K), drawn in the traditional playing-card style.
+   Returns SVG markup for a 100x84 box that fills the lower part of the card. */
+function courtArt(r, s) {
+  const RED = '#dd3328', YEL = '#f3c43c', BLU = '#2a4cc2', INK = '#1b1b1b', SKIN = '#fde7cf', WHT = '#fff';
+  const [P, Q] = (s === 1 || s === 2) ? [RED, BLU] : [BLU, RED];      // robe colours vary by suit colour
+  const st = `stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"`;
+  const suitMark = SUIT_PATHS[s].map(d => `<path d="${d}" transform="translate(45 67) scale(.1)" fill="${s === 1 || s === 2 ? RED : INK}"/>`).join('');
+  let o = '';
+  // held item (behind the figure)
+  if (r === 13) o += `<path d="M12 6h4v54h-4z" fill="#e3e9f0" ${st}/><path d="M6 54h16v4H6z" fill="${YEL}" ${st}/><path d="M12.5 58h3v10h-3z" fill="${RED}" ${st}/>`;
+  if (r === 12) o += `<path d="M82 70C80 55 81 42 83 30" fill="none" stroke="#2f7d32" stroke-width="2"/>`
+    + `<circle cx="83" cy="25" r="5.5" fill="${RED}" ${st}/><circle cx="83" cy="25" r="2.2" fill="${YEL}" ${st}/>`
+    + `<path d="M82 44c-6-2-8-6-8-9 4 0 7 3 8 9z" fill="#3c9a3f" ${st}/>`;
+  if (r === 11) o += `<path d="M84 8v62" stroke="${INK}" stroke-width="2.4"/><path d="M84 6c-8 4-9 14-2 18 6-4 8-12 2-18z" fill="${YEL}" ${st}/>`;
+  // robe & shoulders
+  o += `<path d="M0 84V67c8-9 18-12 30-13h40c12 1 22 4 30 13v17z" fill="${P}" ${st}/>`;
+  o += `<path d="M42 62h16l3 22H39z" fill="${Q}" ${st}/>`;
+  for (let y = 66; y < 84; y += 6) o += `<circle cx="50" cy="${y}" r="1.4" fill="${YEL}"/>`;
+  o += `<path d="M8 72c6-4 12-6 18-6M92 72c-6-4-12-6-18-6" fill="none" stroke="${YEL}" stroke-width="2.4"/>`;
+  // collar (checkered band)
+  o += `<path d="M26 53q24 13 48 0l-3 8q-21 12-42 0z" fill="${YEL}" ${st}/>`;
+  for (let i = 0; i < 7; i++) { const x = 31 + i * 6.3, y = 57.4 + Math.sin((i / 6) * Math.PI) * 4.6; o += `<rect x="${x - 1.3}" y="${y - 1.3}" width="2.6" height="2.6" fill="${i % 2 ? RED : INK}"/>`; }
+  // neck & head
+  o += `<path d="M44 42h12v12H44z" fill="${SKIN}" ${st}/>`;
+  if (r === 12) o += `<path d="M38 30c-3 12-4 22-8 30h10c-1-10 0-18 1-26zM62 30c3 12 4 22 8 30H60c1-10 0-18-1-26z" fill="${YEL}" ${st}/>`;
+  if (r === 11) o += `<circle cx="37.5" cy="36" r="4.5" fill="${YEL}" ${st}/><circle cx="62.5" cy="36" r="4.5" fill="${YEL}" ${st}/><circle cx="38" cy="44" r="4" fill="${YEL}" ${st}/><circle cx="62" cy="44" r="4" fill="${YEL}" ${st}/>`;
+  if (r === 13) o += `<path d="M38 30c-2 8-2 14 0 18h4V32zM62 30c2 8 2 14 0 18h-4V32z" fill="#eee" ${st}/>`;
+  o += `<ellipse cx="50" cy="35" rx="11" ry="13" fill="${SKIN}" ${st}/>`;
+  // face
+  o += `<path d="M43 30.5q2.5-1.6 5 0M52 30.5q2.5-1.6 5 0" fill="none" stroke="${INK}" stroke-width=".9"/>`;
+  o += `<ellipse cx="45.6" cy="33.6" rx="1.7" ry="1.1" fill="${WHT}" stroke="${INK}" stroke-width=".6"/><circle cx="45.9" cy="33.6" r=".8" fill="${BLU}"/>`;
+  o += `<ellipse cx="54.4" cy="33.6" rx="1.7" ry="1.1" fill="${WHT}" stroke="${INK}" stroke-width=".6"/><circle cx="54.7" cy="33.6" r=".8" fill="${BLU}"/>`;
+  o += `<path d="M50 34q-2 5 .6 6" fill="none" stroke="${INK}" stroke-width=".8"/>`;
+  if (r === 13) o += `<path d="M39 37q1 17 11 18 10-1 11-18-3 7-11 7t-11-7z" fill="#eee" ${st}/><path d="M44 42q6-3 12 0q-6 2-12 0z" fill="#ddd" ${st}/>`;
+  else o += `<path d="M47 43.5q3 1.6 6 0" fill="none" stroke="${RED}" stroke-width="1.3" stroke-linecap="round"/>`;
+  if (r === 12) o += `<circle cx="44" cy="38.5" r="1.6" fill="#f6b7ae"/><circle cx="56" cy="38.5" r="1.6" fill="#f6b7ae"/>`;
+  // headwear
+  if (r === 13) o += `<path d="M37 26V9l5 6 4-9 4 8 4-8 4 9 5-6v17z" fill="${YEL}" ${st}/><path d="M37 21h26v5H37z" fill="${RED}" ${st}/>`
+    + `<circle cx="50" cy="15" r="1.8" fill="${RED}" ${st}/><circle cx="43" cy="17" r="1.4" fill="${BLU}"/><circle cx="57" cy="17" r="1.4" fill="${BLU}"/>`;
+  if (r === 12) o += `<path d="M39 25l1-10 4 5 6-8 6 8 4-5 1 10z" fill="${YEL}" ${st}/><path d="M39 22h22v4H39z" fill="${Q}" ${st}/><circle cx="50" cy="16" r="1.6" fill="${RED}"/>`;
+  if (r === 11) o += `<path d="M37 27q0-16 13-16t13 16z" fill="${RED}" ${st}/><path d="M35 24h30v5H35z" fill="${YEL}" ${st}/>`
+    + `<path d="M60 19q10-8 12-2-5 0-10 4z" fill="${Q}" ${st}/>`;
+  // suit emblem on the chest
+  o += `<circle cx="50" cy="72" r="6.2" fill="${WHT}" ${st}/>${suitMark}`;
+  return o;
+}
 const PILES = ['stock', 'waste', 'f0', 'f1', 'f2', 'f3', 't0', 't1', 't2', 't3', 't4', 't5', 't6'];
 const TARGETS = PILES.slice(2);
 
@@ -286,7 +337,7 @@ PILES.forEach(p => {
   el.className = 'slot' + (p === 'stock' ? ' slot-stock' : '');
   el.dataset.pile = p;
   if (p === 'stock') el.innerHTML = RECYCLE_ICON;
-  else if (p[0] === 'f') el.textContent = 'A';
+  else if (p[0] === 'f') { el.textContent = 'A'; el.classList.add('fnd'); }
   board.appendChild(el); slots[p] = el;
 });
 const els = [];
@@ -294,8 +345,8 @@ for (let id = 0; id < 52; id++) {
   const el = document.createElement('div');
   el.className = 'card'; el.dataset.id = id;
   const r = rank(id), s = suit(id), R = RANKS[r - 1];
-  const center = r > 10 ? `<div class="court"><b>${R}</b><svg><use href="#s${s}"/></svg></div>` : `<svg class="big"><use href="#s${s}"/></svg>`;
-  el.innerHTML = `<div class="inner"><div class="face${isRed(id) ? ' red' : ''}"><div class="rk">${R}</div><svg class="sm"><use href="#s${s}"/></svg>${center}</div><div class="back"></div></div>`;
+  const center = r > 10 ? `<svg class="art" viewBox="7 2 86 80" preserveAspectRatio="xMidYMax meet">${courtArt(r, s)}</svg>` : `<svg class="big"><use href="#s${s}"/></svg>`;
+  el.innerHTML = `<div class="inner"><div class="face${isRed(id) ? ' red' : ''}"><div class="rk${r === 10 ? ' ten' : ''}">${R}</div><svg class="sm"><use href="#s${s}"/></svg>${center}</div><div class="back"></div></div>`;
   board.appendChild(el); els.push(el);
 }
 
@@ -305,8 +356,8 @@ function layout() {
   const W = board.clientWidth, H = board.clientHeight;
   const gap = Math.max(3, Math.min(10, W * 0.013));
   let cw = (W - gap * 8) / 7;
-  cw = Math.min(cw, (H - gap * 4) / (1.4 * 3.2), 120);
-  const ch = cw * 1.4;
+  cw = Math.min(cw, (H - gap * 4) / (1.45 * 3.2), 120);
+  const ch = cw * 1.45;
   L = { W, H, gap, cw, ch, x0: (W - (cw * 7 + gap * 6)) / 2, top: gap * 1.4 };
   L.tabY = L.top + ch + gap * 2.4;
   board.style.setProperty('--cw', cw + 'px');
@@ -338,7 +389,7 @@ function render(instant) {
   const [wx, wy] = L.pos.waste, w = S.piles.waste, fan = S.drawN === 3 ? Math.min(S.fan, w.length) : 0;
   w.forEach((id, i) => { const k = i - (w.length - fan); place(id, wx + Math.max(0, k) * cw * 0.3, wy, 100 + i); });
   for (let f = 0; f < 4; f++) { const [fx, fy] = L.pos['f' + f]; S.piles['f' + f].forEach((id, i) => place(id, fx, fy, 200 + i)); }
-  const fd0 = ch * 0.13, fu0 = ch * 0.3, avail = H - tabY - ch - L.gap;
+  const fd0 = ch * 0.12, fu0 = ch * 0.3, avail = H - tabY - ch - L.gap;
   for (let c = 0; c < 7; c++) {
     const pile = S.piles['t' + c];
     let need = 0;
@@ -533,16 +584,25 @@ function onWin() {
 function cardImage(id, w, h, dpr) {
   const c = document.createElement('canvas'); c.width = Math.ceil(w * dpr); c.height = Math.ceil(h * dpr);
   const x = c.getContext('2d'); x.scale(dpr, dpr);
-  x.fillStyle = '#fff'; x.strokeStyle = 'rgba(0,0,0,.4)'; x.lineWidth = 1;
-  x.beginPath(); x.roundRect ? x.roundRect(.5, .5, w - 1, h - 1, w * .08) : x.rect(.5, .5, w - 1, h - 1); x.fill(); x.stroke();
-  const col = isRed(id) ? '#d3192b' : '#141414', s = suit(id), R = RANKS[rank(id) - 1];
+  x.fillStyle = '#fff'; x.strokeStyle = '#2b2b2b'; x.lineWidth = 1;
+  const outline = () => { x.beginPath(); x.roundRect ? x.roundRect(.5, .5, w - 1, h - 1, w * .07) : x.rect(.5, .5, w - 1, h - 1); };
+  outline(); x.fill();
+  const col = isRed(id) ? '#e8372c' : '#141414', s = suit(id), R = RANKS[rank(id) - 1];
   const glyph = (gx, gy, size) => { x.save(); x.translate(gx, gy); x.scale(size / 100, size / 100); x.fillStyle = col; SUIT_PATHS[s].forEach(d => x.fill(new Path2D(d))); x.restore(); };
   x.fillStyle = col; x.textBaseline = 'top';
-  x.font = `700 ${w * .42}px -apple-system,Helvetica,Arial,sans-serif`; x.fillText(R, w * .05, h * .02);
-  glyph(w * .64, w * .06, w * .3);
-  if (rank(id) > 10) { x.font = `700 ${w * .42}px Georgia,serif`; x.textAlign = 'center'; x.fillStyle = col; x.fillText(R, w / 2, h * .46); glyph(w * .38, h * .76, w * .24); }
-  else glyph(w * .18, h - h * .07 - w * .64, w * .64);
+  x.font = `400 ${w * .46}px "Helvetica Neue",Helvetica,Arial,sans-serif`; x.fillText(R, w * .05, h * .02);
+  glyph(w * .62, h * .07, w * .32);
+  if (rank(id) > 10) { const img = COURT_IMGS[id]; if (img && img.complete) { x.save(); outline(); x.clip(); x.drawImage(img, 0, h * .36, w, h * .64); x.restore(); } }
+  else glyph(w * .1, h * .39, w * .8);
+  outline(); x.stroke();
   return c;
+}
+// court portraits as images, for drawing onto the win-animation canvas
+const COURT_IMGS = {};
+for (let id = 0; id < 52; id++) if (rank(id) > 10) {
+  const img = new Image();
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="344" height="320" viewBox="7 2 86 80">${courtArt(rank(id), suit(id))}</svg>`);
+  COURT_IMGS[id] = img;
 }
 function winAnimation() {
   const cv = $('#fx'); cv.hidden = false;
