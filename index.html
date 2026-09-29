@@ -96,6 +96,12 @@ body[data-back="red"] .back{--b1:#d42a2a;--b2:#7d0f12}
 #fx{position:absolute;inset:0;width:100%;height:100%;z-index:5000;pointer-events:none}
 #auto{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:4000;border:0;border-radius:999px;
   background:#fff;color:var(--ink);font:700 15px inherit;padding:11px 22px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+#update{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 40px);transform:translateX(-50%);z-index:15000;
+  display:flex;align-items:center;gap:10px;padding:6px 6px 6px 16px;border-radius:999px;background:#fff;color:var(--ink);
+  font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.35);animation:fade .3s}
+#update[hidden]{display:none}
+#update button{border:0;border-radius:999px;background:var(--teal);color:#fff;font:700 14px inherit;padding:8px 14px}
+#update .x{background:#eef3f5;color:var(--ink);padding:8px 11px}
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 76px);transform:translateX(-50%) translateY(20px);opacity:0;
   background:rgba(10,20,25,.88);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;
   transition:.25s;pointer-events:none;z-index:20000;white-space:nowrap}
@@ -146,10 +152,11 @@ body[data-back="red"] .back{--b1:#d42a2a;--b2:#7d0f12}
   </nav>
 </div>
 <div id="toast"></div>
+<div id="update" hidden><span>New version ready</span><button>Refresh</button><button class="x" aria-label="Dismiss">✕</button></div>
 
 <script>
 'use strict';
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const $ = s => document.querySelector(s);
 const board = $('#board');
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -813,9 +820,11 @@ function showSettings() {
     <div class="row" style="flex-wrap:wrap"><span>Table</span>${seg('felt', [['green', 'Green'], ['teal', 'Dryspace'], ['blue', 'Blue'], ['charcoal', 'Slate']])}</div>
     <div class="row"><span>Card back</span>${seg('back', [['dryspace', 'Dryspace'], ['red', 'Red'], ['blue', 'Blue']])}</div>
     <button class="btn" data-a="close">Done</button>
+    <button class="btn ghost" data-a="update">Check for Updates</button>
     <div class="ver">Dryspace Solitaire v${VERSION} · works offline</div>`);
   m.addEventListener('click', e => {
     if (e.target.dataset.a === 'close') return closeModal();
+    if (e.target.dataset.a === 'update') return checkForUpdates();
     const b = e.target.closest('.seg button'); if (!b) return;
     const k = b.parentElement.dataset.k, raw = b.dataset.v;
     settings[k] = raw === 'true' ? true : raw === 'false' ? false : isNaN(raw) ? raw : +raw;
@@ -848,9 +857,56 @@ setInterval(() => {
 }, 1000);
 let rt;
 window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { layout(); render(true); }, 80); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else if (Snd.ctx) Snd.ctx.resume(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return save();
+  if (Snd.ctx) Snd.ctx.resume();
+  if (swReg && navigator.onLine) swReg.update().catch(() => {});   // quietly look for a new version on resume
+});
 window.addEventListener('pagehide', save);
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+
+/* ---------- updates (never forced: the player chooses when to refresh) ---------- */
+let swReg = null, updating = false;
+const SWC = 'serviceWorker' in navigator ? navigator.serviceWorker : null;
+let hadController = !!(SWC && SWC.controller);
+function applyUpdate() { save(); location.reload(); }
+function swVersion() {
+  return new Promise(res => {
+    if (!SWC || !SWC.controller) return res(null);
+    const ch = new MessageChannel(), t = setTimeout(() => res(null), 3000);
+    ch.port1.onmessage = e => { clearTimeout(t); res(e.data && e.data.version); };
+    SWC.controller.postMessage('version', [ch.port2]);
+  });
+}
+async function checkForUpdates() {
+  if (!SWC) return toast('Updates aren’t supported in this browser');
+  if (!navigator.onLine) return toast('You’re offline — try again when you have signal');
+  const reg = swReg || await SWC.getRegistration();
+  if (!reg) return toast('Updates aren’t ready yet — try again shortly');
+  toast('Checking for updates…'); updating = true;
+  try { await reg.update(); } catch { updating = false; return toast('Couldn’t reach the server — try again later'); }
+  if (reg.installing || reg.waiting) {
+    toast('Downloading update…');
+    setTimeout(() => { if (updating) { updating = false; toast('Update will apply next time you open the game'); } }, 20000);
+    return;
+  }
+  // the new version may already be downloaded but not yet showing on this screen
+  const v = await swVersion();
+  if (v && v !== 'dryspace-solitaire-v' + VERSION) return applyUpdate();
+  updating = false;
+  toast(`You’re up to date (v${VERSION})`);
+}
+if (SWC) {
+  window.addEventListener('load', () => SWC.register('sw.js').then(r => { swReg = r; }).catch(() => {}));
+  SWC.addEventListener('controllerchange', () => {
+    if (!hadController) { hadController = true; return; }     // first install, not an update
+    if (updating) return applyUpdate();
+    $('#update').hidden = false;
+  });
+}
+$('#update').addEventListener('click', e => {
+  if (e.target.closest('.x')) $('#update').hidden = true;
+  else applyUpdate();
+});
 </script>
 </body>
 </html>
