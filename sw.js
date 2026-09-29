@@ -1,7 +1,7 @@
 // Offline-first: the game always opens instantly from the cache.
 // Any new version is fetched quietly in the background and used on the next launch —
 // it never blocks you from playing.
-const CACHE = 'dryspace-solitaire-v1.0.0';
+const CACHE = 'dryspace-solitaire-v1.1.0';
 const ASSETS = [
   './', 'index.html', 'manifest.webmanifest',
   'logo.png', 'logo-white.png', 'wordmark-white.png', 'card-back.png',
@@ -9,7 +9,10 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's HTTP cache so a new version gets fresh files
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {

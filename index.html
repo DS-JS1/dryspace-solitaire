@@ -126,7 +126,7 @@ body[data-back="blue"] .back{background:repeating-linear-gradient(45deg,#1d4f95 
 <div id="app">
   <header>
     <img src="wordmark-white.png" alt="Dryspace">
-    <div id="hud"><span><b>Score</b><i id="score">0</i></span><span><b>Time</b><i id="time">0:00</i></span><span><b>Moves</b><i id="moves">0</i></span></div>
+    <div id="hud"><span><b id="scoreLbl">Score</b><i id="score">0</i></span><span><b>Time</b><i id="time">0:00</i></span><span><b>Moves</b><i id="moves">0</i></span></div>
   </header>
   <div id="board">
     <img class="wm" src="logo-white.png" alt="">
@@ -144,7 +144,7 @@ body[data-back="blue"] .back{background:repeating-linear-gradient(45deg,#1d4f95 
 
 <script>
 'use strict';
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const $ = s => document.querySelector(s);
 const board = $('#board');
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -168,8 +168,9 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
-const settings = Object.assign({ draw: 1, sound: true, left: false, felt: 'green', back: 'dryspace', hud: true }, store.get('dss-settings', {}));
-let stats = Object.assign({ played: 0, won: 0, streak: 0, bestStreak: 0, bestTime: 0, bestScore: 0, fewestMoves: 0 }, store.get('dss-stats', {}));
+const settings = Object.assign({ draw: 1, sound: true, left: false, felt: 'green', back: 'dryspace', hud: true, scoring: 'standard', cumulative: true }, store.get('dss-settings', {}));
+const STATS0 = { played: 0, won: 0, streak: 0, bestStreak: 0, bestTime: 0, bestScore: 0, fewestMoves: 0, vegasBank: 0, vegasBest: 0 };
+let stats = Object.assign({}, STATS0, store.get('dss-stats', {}));
 
 /* ---------- sound (synthesised, works offline) ---------- */
 const Snd = {
@@ -247,7 +248,21 @@ function freshState(deck, drawN) {
   let k = 0;
   for (let r = 0; r < 7; r++) for (let c = r; c < 7; c++) { const id = deck[k++]; piles['t' + c].push(id); if (r === c) up[id] = true; }
   piles.stock = deck.slice(k).reverse();
-  return { piles, up, score: 0, moves: 0, time: 0, started: false, won: false, counted: false, drawN, fan: 0, deal: deck.slice() };
+  const mode = settings.scoring;
+  return { piles, up, score: mode === 'vegas' ? -52 : 0, moves: 0, time: 0, started: false, won: false, counted: false,
+    drawN, fan: 0, deal: deck.slice(), mode, passes: 0, banked: false };
+}
+const vegas = () => S.mode === 'vegas';
+// Vegas: Draw 1 = a single pass through the deck, Draw 3 = three passes
+const canRecycle = () => !vegas() || S.passes < (S.drawN === 1 ? 0 : 2);
+const money = v => (v < 0 ? '-$' : '$') + Math.abs(v);
+// Cumulative Vegas: settle this game's result into the running bank once
+function bankVegas() {
+  if (!S || !vegas() || S.banked || !S.counted) return;
+  S.banked = true;
+  if (settings.cumulative) stats.vegasBank += S.score;
+  stats.vegasBest = Math.max(stats.vegasBest, S.score);
+  store.set('dss-stats', stats);
 }
 function shuffled() {
   const a = [...Array(52).keys()], r = new Uint32Array(52);
@@ -264,11 +279,13 @@ function shuffled() {
   document.body.prepend(defs);
 })();
 const slots = {};
+const RECYCLE_ICON = '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>';
+const NO_RECYCLE_ICON = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 PILES.forEach(p => {
   const el = document.createElement('div');
   el.className = 'slot' + (p === 'stock' ? ' slot-stock' : '');
   el.dataset.pile = p;
-  if (p === 'stock') el.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>';
+  if (p === 'stock') el.innerHTML = RECYCLE_ICON;
   else if (p[0] === 'f') el.textContent = 'A';
   board.appendChild(el); slots[p] = el;
 });
@@ -330,14 +347,19 @@ function render(instant) {
     let y = tabY;
     pile.forEach((id, i) => { place(id, L.pos['t' + c][0], y, 300 + i); y += (S.up[id] ? fu0 : fd0) * sc; });
   }
-  slots.stock.style.opacity = S.piles.waste.length || S.piles.stock.length ? 1 : .35;
+  slots.stock.style.opacity = S.piles.stock.length || (S.piles.waste.length && canRecycle()) ? 1 : .35;
+  slots.stock.innerHTML = canRecycle() ? RECYCLE_ICON : NO_RECYCLE_ICON;
   if (instant) { board.offsetHeight; board.classList.remove('noanim'); }
   hud();
   $('#auto').hidden = !canAuto() || busy;
 }
 function fmtTime(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 function hud() {
-  $('#score').textContent = S.score; $('#time').textContent = fmtTime(S.time); $('#moves').textContent = S.moves;
+  const v = vegas();
+  $('#scoreLbl').textContent = v ? (settings.cumulative ? 'Bank' : 'Vegas') : 'Score';
+  $('#score').textContent = !v ? S.score
+    : money(settings.cumulative ? stats.vegasBank + (S.counted && !S.banked ? S.score : 0) : S.score);
+$('#time').textContent = fmtTime(S.time); $('#moves').textContent = S.moves;
 }
 
 /* ---------- rules ---------- */
@@ -355,7 +377,7 @@ function canDrop(ids, to) {
   return false;
 }
 function firstUp(pile) { for (let i = 0; i < pile.length; i++) if (S.up[pile[i]]) return i; return -1; }
-function snapshot() { return JSON.stringify({ p: S.piles, u: S.up, s: S.score, m: S.moves, f: S.fan }); }
+function snapshot() { return JSON.stringify({ p: S.piles, u: S.up, s: S.score, m: S.moves, f: S.fan, r: S.passes }); }
 function pushUndo() { hist.push(snapshot()); if (hist.length > 400) hist.shift(); }
 function startClock() {
   if (!S.started && !S.won) S.started = true;
@@ -367,13 +389,17 @@ function doMove(from, idx, to) {
   const ids = S.piles[from].splice(idx);
   S.piles[to].push(...ids);
   ids.forEach(id => els[id]._fly = true);
-  if (to[0] === 'f' && from[0] !== 'f') S.score += 10;
+  if (vegas()) {
+    if (to[0] === 'f' && from[0] !== 'f') S.score += 5;
+    else if (from[0] === 'f' && to[0] === 't') S.score -= 5;
+  }
+  else if (to[0] === 'f' && from[0] !== 'f') S.score += 10;
   else if (from === 'waste' && to[0] === 't') S.score += 5;
   else if (from[0] === 'f' && to[0] === 't') S.score = Math.max(0, S.score - 15);
   if (from === 'waste') S.fan = Math.max(S.piles.waste.length ? 1 : 0, S.fan - 1);
   let flipped = false;
   const src = S.piles[from];
-  if (from[0] === 't' && src.length && !S.up[src[src.length - 1]]) { S.up[src[src.length - 1]] = true; S.score += 5; flipped = true; }
+  if (from[0] === 't' && src.length && !S.up[src[src.length - 1]]) { S.up[src[src.length - 1]] = true; if (!vegas()) S.score += 5; flipped = true; }
   S.moves++; startClock();
   if (to[0] === 'f') Snd.play('found', rank(ids[0])); else Snd.play('place');
   if (flipped) setTimeout(() => Snd.play('flip'), 140);
@@ -389,11 +415,14 @@ function draw() {
     const n = Math.min(S.drawN, st.length);
     for (let k = 0; k < n; k++) { const id = st.pop(); S.up[id] = true; w.push(id); els[id]._fly = true; }
     S.fan = n; Snd.play('draw');
+  } else if (w.length && !canRecycle()) {
+    Snd.play('error'); toast('Vegas: no more passes through the deck'); return;
   } else if (w.length) {
     pushUndo();
     S.piles.stock = w.reverse(); S.piles.waste = [];
     S.piles.stock.forEach(id => S.up[id] = false);
-    S.fan = 0; S.score = Math.max(0, S.score - (S.drawN === 1 ? 100 : 20));
+    S.fan = 0; S.passes = (S.passes || 0) + 1;
+    if (!vegas()) S.score = Math.max(0, S.score - (S.drawN === 1 ? 100 : 20));
     Snd.play('recycle');
   } else { Snd.play('error'); return; }
   S.moves++; startClock(); clearHints(); hintIdx = 0;
@@ -423,7 +452,7 @@ function tap(id) {
 function undo() {
   if (busy || S.won || !hist.length) { Snd.play('error'); return; }
   const o = JSON.parse(hist.pop());
-  S.piles = o.p; S.up = o.u; S.score = o.s; S.moves = o.m; S.fan = o.f;
+  S.piles = o.p; S.up = o.u; S.score = o.s; S.moves = o.m; S.fan = o.f; S.passes = o.r || 0;
   PILES.forEach(p => S.piles[p].forEach(id => els[id]._fly = true));
   clearHints(); Snd.play('slide'); render(); save();
 }
@@ -457,7 +486,7 @@ function hint() {
     const mv = m[hintIdx++ % m.length], dest = S.piles[mv.to];
     flash([...S.piles[mv.p].slice(mv.i).map(id => els[id]), dest.length ? els[dest[dest.length - 1]] : slots[mv.to]]);
     Snd.play('click');
-  } else if (S.piles.stock.length || S.piles.waste.length) {
+  } else if (S.piles.stock.length || (S.piles.waste.length && canRecycle())) {
     const st = S.piles.stock; flash([st.length ? els[st[st.length - 1]] : slots.stock]); Snd.play('click');
   } else { toast('No moves left — try a New Game'); Snd.play('error'); }
 }
@@ -479,7 +508,7 @@ async function autoFinish() {
     for (const [p, i, id] of srcs) for (let f = 0; f < 4; f++)
       if (canDrop([id], 'f' + f) && (!best || rank(id) < rank(best[2]))) best = [p, i, id, 'f' + f];
     if (best) { busy = false; doMove(best[0], best[1], best[3]); busy = true; await wait(95); }
-    else if (S.piles.stock.length || S.piles.waste.length) { busy = false; draw(); busy = true; await wait(70); }
+    else if (S.piles.stock.length || (S.piles.waste.length && canRecycle())) { busy = false; draw(); busy = true; await wait(70); }
     else break;
   }
   busy = false; render();
@@ -488,11 +517,14 @@ async function autoFinish() {
 /* ---------- win ---------- */
 function onWin() {
   S.won = true; S.started = false;
-  const bonus = S.time > 30 ? Math.round(700000 / S.time) : 0;
-  S.bonus = bonus; S.score += bonus;
+  if (vegas()) bankVegas();
+  else {
+    const bonus = S.time > 30 ? Math.round(700000 / S.time) : 0;
+    S.bonus = bonus; S.score += bonus;
+    stats.bestScore = Math.max(stats.bestScore, S.score);
+  }
   stats.won++; stats.streak++; stats.bestStreak = Math.max(stats.bestStreak, stats.streak);
   stats.bestTime = stats.bestTime ? Math.min(stats.bestTime, S.time) : S.time;
-  stats.bestScore = Math.max(stats.bestScore, S.score);
   stats.fewestMoves = stats.fewestMoves ? Math.min(stats.fewestMoves, S.moves) : S.moves;
   store.set('dss-stats', stats); hud();
   $('#auto').hidden = true;
@@ -557,7 +589,7 @@ function winAnimation() {
 /* ---------- game lifecycle ---------- */
 function newGame(deck) {
   if (winAnim) { cancelAnimationFrame(winAnim.raf); winAnim = null; }
-  if (S && S.counted && !S.won) { stats.streak = 0; store.set('dss-stats', stats); }
+  if (S && S.counted && !S.won) { stats.streak = 0; bankVegas(); store.set('dss-stats', stats); }
   const cv = $('#fx'); cv.hidden = true; cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
   S = freshState(deck || shuffled(), settings.draw);
   hist = []; hintIdx = 0; clearHints();
@@ -581,7 +613,7 @@ function load() {
   if (!g || !g.S || !g.S.piles || g.S.won) return false;
   const n = PILES.reduce((a, p) => a + (g.S.piles[p] || []).length, 0);
   if (n !== 52) return false;
-  S = g.S; hist = g.hist || []; S.started = S.moves > 0;
+  S = Object.assign({ mode: 'standard', passes: 0, banked: false }, g.S); hist = g.hist || []; S.started = S.moves > 0;
   return true;
 }
 
@@ -678,7 +710,8 @@ function statHtml() {
   const cell = (v, l) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`;
   return `<div class="stats">${cell(stats.played, 'Games played')}${cell(stats.won, 'Games won')}${cell(pct + '%', 'Win rate')}
     ${cell(stats.streak, 'Current streak')}${cell(stats.bestStreak, 'Best streak')}${cell(stats.bestTime ? fmtTime(stats.bestTime) : '–', 'Fastest win')}
-    ${cell(stats.bestScore || '–', 'High score')}${cell(stats.fewestMoves || '–', 'Fewest moves')}</div>`;
+    ${cell(stats.bestScore || '–', 'High score')}${cell(stats.fewestMoves || '–', 'Fewest moves')}
+    ${cell(money(stats.vegasBank), 'Vegas bank')}${cell(stats.vegasBest ? money(stats.vegasBest) : '–', 'Best Vegas game')}</div>`;
 }
 function showStats() {
   const m = openModal(`<h2>Statistics</h2>${statHtml()}
@@ -686,7 +719,7 @@ function showStats() {
     <button class="btn" data-a="close">Done</button>`);
   m.addEventListener('click', e => {
     const a = e.target.dataset.a; if (!a) return;
-    if (a === 'reset') { if (confirm('Reset all statistics?')) { stats = { played: 0, won: 0, streak: 0, bestStreak: 0, bestTime: 0, bestScore: 0, fewestMoves: 0 }; store.set('dss-stats', stats); showStats(); } }
+    if (a === 'reset') { if (confirm('Reset all statistics, including your Vegas bank?')) { stats = Object.assign({}, STATS0); store.set('dss-stats', stats); hud(); showStats(); } }
     else closeModal();
   });
 }
@@ -696,8 +729,11 @@ function showWin() {
     <div class="stats">
       <div class="stat"><b>${fmtTime(S.time)}</b><span>Time</span></div>
       <div class="stat"><b>${S.moves}</b><span>Moves</span></div>
-      <div class="stat"><b>${S.score}</b><span>Score</span></div>
-      <div class="stat"><b>${S.bonus || 0}</b><span>Time bonus</span></div>
+      ${vegas()
+        ? `<div class="stat"><b>${money(S.score)}</b><span>This game</span></div>
+           <div class="stat"><b>${settings.cumulative ? money(stats.vegasBank) : '–'}</b><span>Vegas bank</span></div>`
+        : `<div class="stat"><b>${S.score}</b><span>Score</span></div>
+           <div class="stat"><b>${S.bonus || 0}</b><span>Time bonus</span></div>`}
     </div>
     <div style="font-size:14px;color:#5c6b73;margin-top:4px">Win streak: ${stats.streak} · Won ${stats.won} of ${stats.played}</div>
     <button class="btn" data-a="new">Play Again</button>`, true);
@@ -709,6 +745,8 @@ function seg(key, opts) {
 function showSettings() {
   const m = openModal(`<h2>Settings</h2>
     <div class="row"><span>Draw</span>${seg('draw', [[1, 'Draw 1'], [3, 'Draw 3']])}</div>
+    <div class="row"><span>Scoring</span>${seg('scoring', [['standard', 'Standard'], ['vegas', 'Vegas']])}</div>
+    <div class="row"><span>Vegas money</span>${seg('cumulative', [[true, 'Cumulative'], [false, 'Per game']])}</div>
     <div class="row"><span>Sounds</span>${seg('sound', [[true, 'On'], [false, 'Off']])}</div>
     <div class="row"><span>Stock pile</span>${seg('left', [[false, 'Right'], [true, 'Left']])}</div>
     <div class="row"><span>Score &amp; timer</span>${seg('hud', [[true, 'Show'], [false, 'Hide']])}</div>
@@ -725,9 +763,11 @@ function showSettings() {
     b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
     applySettings();
     Snd.play('click');
-    if (k === 'draw' && settings.draw !== S.drawN) {
-      if (!S.moves) { closeModal(); newGame(); } else toast(`Draw ${settings.draw} starts from your next game`);
+    if ((k === 'draw' && settings.draw !== S.drawN) || (k === 'scoring' && settings.scoring !== S.mode)) {
+      const what = k === 'draw' ? `Draw ${settings.draw}` : settings.scoring === 'vegas' ? 'Vegas scoring' : 'Standard scoring';
+      if (!S.moves) { closeModal(); newGame(); } else toast(`${what} starts from your next game`);
     }
+    if (k === 'cumulative') hud();
     if (k === 'left') { layout(); render(true); }
   });
 }
