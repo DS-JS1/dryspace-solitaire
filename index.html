@@ -96,6 +96,18 @@ body[data-back="red"] .back{--b1:#d42a2a;--b2:#7d0f12}
 #fx{position:absolute;inset:0;width:100%;height:100%;z-index:5000;pointer-events:none}
 #auto{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:4000;border:0;border-radius:999px;
   background:#fff;color:var(--ink);font:700 15px inherit;padding:11px 22px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+#race{position:relative;z-index:2;display:flex;align-items:center;gap:6px;padding:5px calc(env(safe-area-inset-right) + 8px) 5px calc(env(safe-area-inset-left) + 8px);
+  background:rgba(0,0,0,.28);overflow-x:auto;font-size:12px;white-space:nowrap}
+#race[hidden]{display:none}
+#race .rc{display:flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.12)}
+#race .rc.me{background:rgba(255,255,255,.28)}
+#race .rc.away{opacity:.5}
+#race .rc em{display:block;width:34px;height:6px;border-radius:3px;background:rgba(255,255,255,.25);overflow:hidden}
+#race .rc em i{display:block;height:100%;background:#ffd54a}
+#race button{margin-left:auto;border:0;border-radius:999px;background:#ffd54a;color:#3a2b00;font:700 12px inherit;padding:6px 12px;flex:none}
+#race button:disabled{opacity:.45}
+#race .rw{opacity:.85;margin-left:auto}
+.note{font-size:13px;color:#5c6b73;margin:-4px 0 10px;line-height:1.35}
 #update{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 40px);transform:translateX(-50%);z-index:15000;
   display:flex;align-items:center;gap:10px;padding:6px 6px 6px 16px;border-radius:999px;background:#fff;color:var(--ink);
   font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.35);animation:fade .3s}
@@ -139,6 +151,7 @@ body[data-back="red"] .back{--b1:#d42a2a;--b2:#7d0f12}
     <img src="wordmark-white.png" alt="Dryspace">
     <div id="hud"><span><b id="scoreLbl">Score</b><i id="score">0</i></span><span><b>Time</b><i id="time">0:00</i></span><span><b>Moves</b><i id="moves">0</i></span></div>
   </header>
+  <div id="race" hidden></div>
   <div id="board">
     <img class="wm" src="logo-white.png" alt="">
     <canvas id="fx" hidden></canvas>
@@ -147,6 +160,7 @@ body[data-back="red"] .back{--b1:#d42a2a;--b2:#7d0f12}
   <nav>
     <button data-act="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
     <button data-act="game"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="11" height="15" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v13"/></svg>Game</button>
+    <button data-act="nearby" id="nearbyBtn"><svg viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 20 0"/><path d="M5 12a10 10 0 0 1 14 0"/><path d="M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1.2"/></svg>Race</button>
     <button data-act="hint"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>Hint</button>
     <button data-act="undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Undo</button>
   </nav>
@@ -154,9 +168,10 @@ body[data-back="red"] .back{--b1:#d42a2a;--b2:#7d0f12}
 <div id="toast"></div>
 <div id="update" hidden><span>New version ready</span><button>Refresh</button><button class="x" aria-label="Dismiss">✕</button></div>
 
+<script src="nearby.js"></script>
 <script>
 'use strict';
-const VERSION = '1.3.1';
+const VERSION = '1.4.0';
 const $ = s => document.querySelector(s);
 const board = $('#board');
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -586,6 +601,7 @@ function onWin() {
   stats.fewestMoves = stats.fewestMoves ? Math.min(stats.fewestMoves, S.moves) : S.moves;
   store.set('dss-stats', stats); hud();
   $('#auto').hidden = true;
+  raceDone();
   setTimeout(() => { Snd.play('win'); winAnimation(); }, 450);
 }
 function cardImage(id, w, h, dpr) {
@@ -654,11 +670,11 @@ function winAnimation() {
 }
 
 /* ---------- game lifecycle ---------- */
-function newGame(deck) {
+function newGame(deck, drawN) {
   if (winAnim) { cancelAnimationFrame(winAnim.raf); winAnim = null; }
   if (S && S.counted && !S.won) { stats.streak = 0; bankVegas(); store.set('dss-stats', stats); }
   const cv = $('#fx'); cv.hidden = true; cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
-  S = freshState(deck || shuffled(), settings.draw);
+  S = freshState(deck || shuffled(), drawN || settings.draw);
   hist = []; hintIdx = 0; clearHints();
   busy = true;
   // gather everything onto the stock, then deal out with a stagger
@@ -674,7 +690,7 @@ function newGame(deck) {
   setTimeout(() => { order.forEach(id => { els[id].style.transitionDelay = ''; els[id].firstChild.style.transitionDelay = ''; }); busy = false; render(); }, order.length * 35 + 500);
   save();
 }
-function save() { if (S) store.set('dss-game', { S, hist: hist.slice(-80) }); }
+function save() { raceProgress(); if (S && !race) store.set('dss-game', { S, hist: hist.slice(-80) }); }
 function load() {
   const g = store.get('dss-game', null);
   if (!g || !g.S || !g.S.piles || g.S.won) return false;
@@ -741,6 +757,7 @@ document.querySelector('nav').addEventListener('click', e => {
   const a = b.dataset.act;
   if (a === 'undo') undo();
   else if (a === 'hint') hint();
+  else if (a === 'nearby') { Snd.play('click'); Nearby.open(); }
   else { Snd.play('click'); a === 'game' ? showGameMenu() : showSettings(); }
 });
 
@@ -766,6 +783,7 @@ function showGameMenu() {
   m.addEventListener('click', e => {
     const a = e.target.dataset.a; if (!a) return;
     Snd.play('click');
+    if ((a === 'new' || a === 'restart') && race) { closeModal(); return toast(race.role === 'host' ? 'Use “New race” in the race bar' : 'Leave the race first (tap Race)'); }
     if (a === 'new') { closeModal(); newGame(); }
     else if (a === 'restart') { closeModal(); newGame(S.deal); }
     else if (a === 'stats') showStats();
@@ -802,9 +820,10 @@ function showWin() {
         : `<div class="stat"><b>${S.score}</b><span>Score</span></div>
            <div class="stat"><b>${S.bonus || 0}</b><span>Time bonus</span></div>`}
     </div>
+    ${race && race.started ? '<div id="racePlace" style="font-size:18px;font-weight:700;margin:4px 0">' + racePlaceText() + '</div>' : ''}
     <div style="font-size:14px;color:#5c6b73;margin-top:4px">Win streak: ${stats.streak} · Won ${stats.won} of ${stats.played}</div>
     <button class="btn" data-a="new">Play Again</button>`, true);
-  m.addEventListener('click', e => { if (e.target.dataset.a === 'new' || e.target === m) { closeModal(); newGame(); } });
+  m.addEventListener('click', e => { if (e.target.dataset.a === 'new' || e.target === m) { closeModal(); if (race) { if (race.role === 'host') raceStart(); else toast('Waiting for the host to start the next race'); } else newGame(); } });
 }
 function seg(key, opts) {
   return `<div class="seg" data-k="${key}">${opts.map(([v, l]) => `<button data-v="${v}" class="${String(settings[key]) === String(v) ? 'on' : ''}">${l}</button>`).join('')}</div>`;
@@ -834,7 +853,7 @@ function showSettings() {
     Snd.play('click');
     if ((k === 'draw' && settings.draw !== S.drawN) || (k === 'scoring' && settings.scoring !== S.mode)) {
       const what = k === 'draw' ? `Draw ${settings.draw}` : settings.scoring === 'vegas' ? 'Vegas scoring' : 'Standard scoring';
-      if (!S.moves) { closeModal(); newGame(); } else toast(`${what} starts from your next game`);
+      if (!S.moves && !race) { closeModal(); newGame(); } else toast(`${what} starts from your next game`);
     }
     if (k === 'cumulative') hud();
     if (k === 'left') { layout(); render(true); }
@@ -848,7 +867,149 @@ function applySettings() {
   document.querySelector('meta[name=theme-color]').content = felt2 || '#1e6b2c';
 }
 
+/* ---------- race: everyone plays the same deal on their own phone (Play Nearby) ---------- */
+// race = { role, rid, started, seats:[{name,link,f,done,place}] (host), board:[...] (guest), me, link, down, order, deck, drawN, chain }
+let race = null, raceSaved = null, raceBarShown = false;
+const resc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const foundCount = () => S ? ['f0', 'f1', 'f2', 'f3'].reduce((a, f) => a + S.piles[f].length, 0) : 0;
+const ord = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n + 'th';
+const medal = n => n === 1 ? '🥇' : n === 2 ? '🥈' : n === 3 ? '🥉' : '🏁';
+const seatEntry = s => ({ name: s.name, f: s.f, done: s.done, place: s.place, away: !!(s.link && !s.link.open) });
+function relayout() { layout(); render(true); }
+function raceBar() {
+  const el = $('#race');
+  el.hidden = !race;
+  if (race) {
+    const list = race.role === 'host' ? race.seats.map(seatEntry) : race.board;
+    let html = list.map((p, i) => `<span class="rc${i === race.me ? ' me' : ''}${p.away ? ' away' : ''}"><b>${resc(p.name)}</b><em><i style="width:${Math.round((p.f || 0) / 52 * 100)}%"></i></em><small>${p.done ? medal(p.place) : (p.f || 0)}</small></span>`).join('');
+    if (race.down) html += '<small class="rw">Disconnected — tap Nearby</small>';
+    else if (race.role === 'host') html += `<button data-race="${race.started ? 'again' : 'start'}" ${!race.started && race.seats.length < 2 ? 'disabled' : ''}>${race.started ? 'New race' : 'Start race'}</button>`;
+    else if (!race.started) html += '<small class="rw">Waiting for the host…</small>';
+    el.innerHTML = html;
+  }
+  if (raceBarShown !== !!race) { raceBarShown = !!race; relayout(); }
+  const rp = document.getElementById('racePlace'); if (rp) rp.innerHTML = racePlaceText();
+}
+function myPlace() { if (!race) return 0; const e = race.role === 'host' ? race.seats[0] : race.board[race.me]; return e && e.done ? e.place : 0; }
+function racePlaceText() { const p = myPlace(); return p ? `You finished ${ord(p)} ${medal(p)}` : 'Race result coming…'; }
+function raceBcast(m) { if (race && race.role === 'host') race.seats.forEach(s => s.link && s.link.open && s.link.send(m)); }
+function raceBoard() { if (race && race.role === 'host') raceBcast({ t: 'board', list: race.seats.map(seatEntry), started: race.started, rid: race.rid }); raceBar(); }
+function raceStart() {
+  if (!race || race.role !== 'host' || race.seats.length < 2) return;
+  race.rid = Date.now().toString(36); race.started = true; race.order = 0;
+  race.seats.forEach(s => { s.f = 0; s.done = false; s.place = 0; });
+  race.deck = shuffled(); race.drawN = settings.draw;
+  raceBcast({ t: 'start', deck: race.deck, drawN: race.drawN, rid: race.rid });
+  beginRaceGame(race.deck, race.drawN); raceBoard();
+}
+function beginRaceGame(deck, drawN) {
+  closeModal(); race.lastF = -1;
+  if (S) S.counted = false;                     // switching to a race isn't a lost game
+  newGame(deck, drawN); toast(`Race on! Same deal for everyone · Draw ${drawN}`);
+}
+// called from save(): after every move and every few seconds
+function raceProgress() {
+  if (!race || !race.started || !S) return;
+  const f = foundCount(); if (f === race.lastF) return; race.lastF = f;
+  if (race.role === 'host') { const s = race.seats[0]; if (!s.done) { s.f = f; raceBoard(); } }
+  else if (race.link && race.link.open) race.link.send({ t: 'prog', f, rid: race.rid });
+}
+function raceDone() {
+  if (!race || !race.started) return;
+  if (race.role === 'host') assignPlace(0);
+  else if (race.link && race.link.open) race.link.send({ t: 'done', rid: race.rid });
+}
+function assignPlace(i) {
+  const s = race.seats[i]; if (!s || s.done) return;
+  s.done = true; s.f = 52; s.place = ++race.order;
+  if (i !== 0) toast(`${s.name} finished ${ord(s.place)}! ${medal(s.place)}`);
+  raceBoard();
+}
+function onRaceLink(link, role) {
+  if (!race) {
+    raceSaved = JSON.parse(JSON.stringify({ S, hist }));
+    race = { role, rid: null, started: false, seats: [], board: [], me: 0, link: null, down: role === 'guest', order: 0, chain: Promise.resolve() };
+    if (role === 'host') race.seats.push({ name: Nearby.name, link: null, f: 0, done: false, place: 0 });
+  }
+  race.role = role; if (role === 'guest') race.link = link;
+  link.on('open', () => {
+    if (!race) return;
+    if (role === 'guest') race.down = false;
+    link.send({ t: 'hello', name: Nearby.name, rid: race.rid }); raceBar();
+  });
+  link.on('message', m => { if (race) race.chain = race.chain.then(() => onRaceMsg(m, link)).catch(e => console.error(e)); });
+  link.on('close', () => {
+    if (!race) return;
+    if (role === 'guest') { if (race.link === link) { race.down = true; raceBar(); toast('Race connection lost — your game carries on. Tap Nearby to rejoin.'); } return; }
+    const i = race.seats.findIndex(s => s.link === link);
+    if (i > 0) { if (!race.started) { race.seats.splice(i, 1); toast('A player left'); } raceBoard(); }
+  });
+  raceBar();
+}
+async function onRaceMsg(m, link) {
+  if (!race) return;
+  if (race.role === 'host') {
+    const i = race.seats.findIndex(s => s.link === link);
+    switch (m.t) {
+      case 'hello': {
+        const name = String(m.name || 'Friend').slice(0, 14);
+        let k = race.seats.findIndex((s, j) => j > 0 && s.name === name && !(s.link && s.link.open));    // rejoin
+        if (k < 0) {
+          if (race.seats.length >= 4) { link.send({ t: 'full', why: 'full' }); return setTimeout(() => link.close(), 400); }
+          if (race.seats.some(s => s.name === name)) { link.send({ t: 'full', why: 'name' }); return setTimeout(() => link.close(), 400); }
+          race.seats.push({ name, link, f: 0, done: false, place: 0 }); k = race.seats.length - 1; toast(`${name} joined the race`);
+        } else { race.seats[k].link = link; toast(`${name} is back`); }
+        link.send({ t: 'you', i: k });
+        if (race.started && m.rid !== race.rid) link.send({ t: 'start', deck: race.deck, drawN: race.drawN, rid: race.rid });   // late joiner gets the same deal
+        raceBoard(); Nearby.rerender();
+        break;
+      }
+      case 'prog': if (i > 0 && m.rid === race.rid && !race.seats[i].done) { race.seats[i].f = Math.max(0, Math.min(52, +m.f || 0)); raceBoard(); } break;
+      case 'done': if (i > 0 && m.rid === race.rid) assignPlace(i); break;
+    }
+    return;
+  }
+  switch (m.t) {
+    case 'you': race.me = m.i; raceBar(); break;
+    case 'board': {
+      const prev = race.board || [];
+      race.board = Array.isArray(m.list) ? m.list : []; race.started = !!m.started;
+      race.board.forEach((p, k) => { if (k !== race.me && p.done && !(prev[k] && prev[k].done)) toast(`${p.name} finished ${ord(p.place)}! ${medal(p.place)}`); });
+      raceBar(); break;
+    }
+    case 'start': race.rid = m.rid; race.started = true; beginRaceGame(m.deck, m.drawN === 3 ? 3 : 1); raceBar(); break;
+    case 'full': Nearby.leave(); toast(m.why === 'name' ? 'Someone in that race already has your name — change it in Nearby' : 'That race is full (4 players)'); break;
+  }
+}
+function onRaceLeave() {
+  if (!race) return;
+  race = null;
+  if (winAnim) { cancelAnimationFrame(winAnim.raf); winAnim = null; }
+  const cv = $('#fx'); cv.hidden = true; cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+  els.forEach(e => e.style.visibility = '');
+  if (raceSaved && raceSaved.S) { S = raceSaved.S; hist = raceSaved.hist || []; } else { S = null; }
+  raceSaved = null; closeModal();
+  if (!S) { S = freshState(shuffled(), settings.draw); newGame(S.deal); }
+  raceBar(); relayout(); toast('Back to your own game');
+}
+$('#race').addEventListener('click', e => {
+  const a = e.target.dataset.race; if (!a) return;
+  Snd.init(); Snd.play('click');
+  if (a === 'start') raceStart();
+  else if (a === 'again') {
+    const m = openModal(`<h2>Start a new race?</h2><div class="note">Everyone gets a fresh deal.</div><button class="btn" data-a="yes">New Race</button><button class="btn ghost" data-a="no">Keep Racing</button>`, true);
+    m.addEventListener('click', ev => { if (ev.target.dataset.a === 'yes') raceStart(); else if (ev.target.dataset.a === 'no') closeModal(); });
+  }
+});
+
 /* ---------- boot ---------- */
+Nearby.init({
+  game: 'sol', defaultName: 'Player', photos: false, maxGuests: 3,
+  openModal, closeModal, toast, esc: resc, onLink: onRaceLink, onLeave: onRaceLeave,
+  status: () => !race ? '' : race.down ? 'The connection dropped — your game carries on. Rejoin with the same name to keep your place.'
+    : !race.started ? (race.role === 'host' ? 'When everyone’s in, close this and tap <b>Start race</b>.' : 'Waiting for the host to start the race.')
+    : 'Racing: same deal for everyone. First to get all 52 cards home wins.'
+});
 applySettings();
 layout();
 if (load()) render(true); else { S = freshState(shuffled(), settings.draw); render(true); newGame(S.deal); }
